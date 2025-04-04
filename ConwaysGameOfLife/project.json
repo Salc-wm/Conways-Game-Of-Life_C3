@@ -3,7 +3,7 @@
   "warnings": [ "no-unused" ],
 
   "dependency-search-paths": [ "lib" ],
-  "dependencies": ["raylib55", "sdl2", "glfw"],
+  "dependencies": ["raylib55"],
 
   "authors": [ "Calixto <raphaelcalixto2013@gmail.com>" ],
   "version": "1.1.0",
