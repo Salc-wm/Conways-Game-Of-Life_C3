@@ -6,3 +6,6 @@
 Is a cellular automaton created by British mathematician John H. Conway in 1970.
 
 A simulation that reproduces the behavior of groups of living beings through simple rules. The game takes place in an infinite two-dimensional arrangement of cells that may be alive or dead.
+
+## ...
+Just go into the __"ConwaysGameOfLife"__ folder, and run `c3c run`
