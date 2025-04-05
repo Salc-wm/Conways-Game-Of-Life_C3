@@ -1,25 +1,22 @@
 module gofl_simul;
-import cst_rl;
+
+import cst;
+import grid_game;
+
+import std::time;
+import std::thread;
+
+
+alias M_grid = Grid {cst::SZ_CLS_GRID};
 
 struct Simulation
 {
     bool run;
-    int cells_live;
+    uint cells_live;
 
-    Grid grid;
+    double timer;
+    M_grid grid;
 }
-
-const ichar[<2>][8] NEIGHBORS_OFFSETS @local =
-{
-    {-1, 0 },
-    { 1, 0 },
-    { 0,-1 },
-    { 0, 1 },
-    {-1,-1 },
-    {-1, 1 },
-    { 1,-1 },
-    { 1, 1 }
-};
 
 
 fn int Simulation.getValue(Simulation* self, Table grid) @inline =>
@@ -31,64 +28,74 @@ fn int Simulation.getValue(Simulation* self, Table grid) @inline =>
 macro bool Simulation.isWithinBounds(Simulation* self, Table grid) @local =>
     grid.x < self.grid.rows && grid.y < self.grid.columns;
 
-macro int Simulation.countLiveNeighbors(Simulation* self, Table *grid) @local {
-    var live_neighbors = 0;
+fn uint Simulation.countLiveNeighbors(Simulation* self, Table *grid) @local {
+    uint live_neighbors = 0;
 
-    foreach (offset: NEIGHBORS_OFFSETS) live_neighbors += self.getValue({
-        (grid.x + offset.x + self.grid.getRows()) % self.grid.getRows(),
-        (grid.y + offset.y + self.grid.getColumns()) % self.grid.getColumns()
-    });
+    uint rows = self.grid.getRows();
+    uint cols = self.grid.getColumns();
+
+    // Calcula as coordenadas com wrap-around diretamente, evitando o array de offsets
+    int x = grid.x;
+    int y = grid.y;
+
+    // Cálculo das coordenadas com mod otimizado usando operações inline
+    int x_minus = (x - 1 + rows) % rows;
+    int x_plus  = (x + 1) % rows;
+
+    int y_minus = (y - 1 + cols) % cols;
+    int y_plus  = (y + 1) % cols;
+
+    // Verificação direta dos 8 vizinhos, eliminando o loop foreach
+    live_neighbors += self.getValue({x_minus, y_minus});  // Superior esquerdo
+    live_neighbors += self.getValue({x_minus, y});        // Esquerdo
+    live_neighbors += self.getValue({x_minus, y_plus});   // Inferior esquerdo
+    live_neighbors += self.getValue({x, y_minus});        // Superior
+    live_neighbors += self.getValue({x, y_plus});         // Inferior
+    live_neighbors += self.getValue({x_plus, y_minus});   // Superior direito
+    live_neighbors += self.getValue({x_plus, y});         // Direito
+    live_neighbors += self.getValue({x_plus, y_plus});    // Inferior direito
 
     return live_neighbors;
 }
 
-macro void Simulation.draw(Simulation* self) => self.grid.draw();
+macro void Simulation.draw(Simulation* self, double deltaTime) => self.grid.draw(deltaTime);
 macro void Simulation.clearGrid(Simulation* self) => self.grid.clear();
 
-fn void Simulation.toggleCell(Simulation* self, Table grid, bool action, char v) {
-    if (action && !self.@isRunning() && self.isWithinBounds(grid)) self.grid.toggleCell(&grid, v);
-}
+fn void Simulation.toggleCell(Simulation* self, Table grid, bool action, ushort v) =>
+    action && !self.@isRunning() && self.isWithinBounds(grid)? self.grid.toggleCell(&grid, v) : (void)0;
 
-macro int Simulation.getLivingCells(Simulation* self) => self.cells_live;
+macro uint Simulation.getLivingCells(Simulation* self) => self.cells_live;
 
-macro void Simulation.stop(Simulation* self) => self.run = false;
+macro void Simulation.stop(Simulation* self)  => self.run = false;
 macro void Simulation.start(Simulation* self) => self.run = true;
 
-macro bool Simulation.@isRunning(Simulation* &self) => self.run;
+macro bool Simulation.@isRunning(Simulation* self) => self.run;
 macro void Simulation.createRandomState(Simulation* self) => self.grid.fillRandom();
 
-fn void Simulation.update(Simulation* self) {
+
+fn void Simulation.update(Simulation* self, double deltaTime) {
     if (!self.@isRunning()) return;
 
-    Grid temp_grid = self.grid;
+    if (self.grid.l_cells == 0) {
+        self.cells_live = self.grid.l_cells;
+        return;
+    }
 
-    foreach (int idxr, &row: self.grid.cells) foreach (int idxc, &_n: *row) {
-        Table posp = { idxr, idxc };
-        Table* pos = &posp;
+    self.timer += deltaTime;
+    if (self.timer < cst::UPDATE_INTERVAL) return;
+    self.timer = 0.0f;
 
-        int live_neighbors = self.countLiveNeighbors(pos);
-        int cell_value = self.getValue(*pos);
+    M_grid temp_grid = self.grid;
+    foreach (ushort idxr, &row: temp_grid.cells) foreach (ushort idxc, &_n: *row) {
+        Table pos = { idxr, idxc };
 
-        if (cell_value) {
-            if (live_neighbors > 3 || live_neighbors < 2) {
-                temp_grid.setValue(pos, 0);
-                continue;
-            }
+        int live_neighbors = self.countLiveNeighbors(&pos);
+        int cell_value = self.getValue(pos);
 
-            self.grid.setLivingCells();
-            temp_grid.setValue(pos, 1);
+        bool will_live = (live_neighbors == 3) || (cell_value && (live_neighbors == 2));
+        if (will_live) self.grid.setLivingCells();
 
-            continue;
-        }
-
-        if (live_neighbors == 3) {
-            self.grid.setLivingCells();
-            temp_grid.setValue(pos, 1);
-
-            continue;
-        }
-
-        temp_grid.setValue(pos, 0);
+        temp_grid.toggleCell(&pos, (char)will_live);
     }
 
     self.cells_live = self.grid.l_cells;
