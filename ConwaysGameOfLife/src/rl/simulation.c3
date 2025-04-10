@@ -1,13 +1,13 @@
 module gofl_simul;
 
 import cst;
-import grid_game;
+import grid_cells;
 
 import std::time;
 import std::thread;
 
 
-alias M_grid = Grid {cst::SZ_CLS_GRID};
+alias Grid_game = Grid {cst::SZ_GRID_WTH, cst::SZ_GRID_HHT};
 
 struct Simulation
 {
@@ -15,7 +15,7 @@ struct Simulation
     uint cells_live;
 
     double timer;
-    M_grid grid;
+    Grid_game grid;
 }
 
 
@@ -28,9 +28,17 @@ fn int Simulation.getValue(Simulation* self, Table grid) @inline =>
 macro bool Simulation.isWithinBounds(Simulation* self, Table grid) @local =>
     grid.x < self.grid.rows && grid.y < self.grid.columns;
 
-fn uint Simulation.countLiveNeighbors(Simulation* self, Table *grid) @local {
-    uint live_neighbors = 0;
 
+macro uint[2] get_coordinates(int pos, int grid) @local =>
+    { (pos - 1 + grid) % grid, (pos + 1) % grid };
+
+macro void Simulation.neighbor_check(self, uint *cells, int pos, coor_x, coor_y, char mp) {
+    *cells += self.getValue({coor_x[mp], coor_y[0]});  // Superior Esquerdo | Direito
+    *cells += self.getValue({coor_x[mp], pos});        // Esquerdo | Direito
+    *cells += self.getValue({coor_x[mp], coor_y[1]});  // Inferior Esquerdo | Direito
+}
+
+fn uint Simulation.countLiveNeighbors(Simulation* self, Table *grid, uint live_neighbors = 0) @local {
     uint rows = self.grid.getRows();
     uint cols = self.grid.getColumns();
 
@@ -38,27 +46,24 @@ fn uint Simulation.countLiveNeighbors(Simulation* self, Table *grid) @local {
     int x = grid.x;
     int y = grid.y;
 
-    // Cálculo das coordenadas com mod otimizado usando operações inline
-    int x_minus = (x - 1 + rows) % rows;
-    int x_plus  = (x + 1) % rows;
-
-    int y_minus = (y - 1 + cols) % cols;
-    int y_plus  = (y + 1) % cols;
+    // int minus = (x - 1 + rows) % rows;
+    // int plus  = (x + 1) % rows;
+    uint[2] x_mp_coor = get_coordinates(x, rows);
+    uint[2] y_mp_coor = get_coordinates(y, cols);
 
     // Verificação direta dos 8 vizinhos, eliminando o loop foreach
-    live_neighbors += self.getValue({x_minus, y_minus});  // Superior esquerdo
-    live_neighbors += self.getValue({x_minus, y});        // Esquerdo
-    live_neighbors += self.getValue({x_minus, y_plus});   // Inferior esquerdo
-    live_neighbors += self.getValue({x, y_minus});        // Superior
-    live_neighbors += self.getValue({x, y_plus});         // Inferior
-    live_neighbors += self.getValue({x_plus, y_minus});   // Superior direito
-    live_neighbors += self.getValue({x_plus, y});         // Direito
-    live_neighbors += self.getValue({x_plus, y_plus});    // Inferior direito
+    self.neighbor_check(&live_neighbors, y, x_mp_coor, y_mp_coor, 0);
+
+    live_neighbors += self.getValue({x, y_mp_coor[0]});  // Superior
+    live_neighbors += self.getValue({x, y_mp_coor[1]});  // Inferior
+
+    self.neighbor_check(&live_neighbors, y, x_mp_coor, y_mp_coor, 1);
 
     return live_neighbors;
 }
 
-macro void Simulation.draw(Simulation* self, double deltaTime) => self.grid.draw(deltaTime);
+macro void Simulation.draw(Simulation* self, double deltaTime) =>
+    self.grid.drawCells(deltaTime);
 macro void Simulation.clearGrid(Simulation* self) => self.grid.clear();
 
 fn void Simulation.toggleCell(Simulation* self, Table grid, bool action, ushort v) =>
@@ -70,7 +75,7 @@ macro void Simulation.stop(Simulation* self)  => self.run = false;
 macro void Simulation.start(Simulation* self) => self.run = true;
 
 macro bool Simulation.@isRunning(Simulation* self) => self.run;
-macro void Simulation.createRandomState(Simulation* self) => self.grid.fillRandom();
+macro void Simulation.createRandomState(Simulation* self) => self.grid.fillRandomCells();
 
 
 fn void Simulation.update(Simulation* self, double deltaTime) {
@@ -85,7 +90,7 @@ fn void Simulation.update(Simulation* self, double deltaTime) {
     if (self.timer < cst::UPDATE_INTERVAL) return;
     self.timer = 0.0f;
 
-    M_grid temp_grid = self.grid;
+    Grid_game temp_grid = self.grid;
     foreach (ushort idxr, &row: temp_grid.cells) foreach (ushort idxc, &_n: *row) {
         Table pos = { idxr, idxc };
 

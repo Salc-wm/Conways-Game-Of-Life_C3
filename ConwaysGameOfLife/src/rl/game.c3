@@ -1,7 +1,6 @@
 module gofl_rylib5::system_rl5 @local;
 
 import cst;
-import grid_game;
 import gofl_simul;
 
 import raylib5::rl;
@@ -13,9 +12,7 @@ macro bool key_pressed($key) => rl::isKeyPressed($key);
  * @require row >= 0, column >= 0
  **/
 macro Table @get_grid_rc(uint row, column) => { row / cst::GRD_CELL_SIZE, column / cst::GRD_CELL_SIZE };
-macro Color background_color() => rl::getColor(0x101010FF);
-
-macro float @subtract_float(double a, double b) => (float)(a - b);
+macro float @subtract_float(double #a, double #b) => (float)(#a - #b);
 
 macro void center_draw_text(Text_opt args, Color color, bool align = true) =>
     rl::drawText(args.state, align? cst::CENTER_TEXT + args.r : args.r, args.g, args.b, color);
@@ -67,7 +64,7 @@ fn void gofl_update(Simulation game) {
         game.update(deltaTime);
 
         rl::beginDrawing();
-            rl::clearBackground(background_color());
+            rl::clearBackground(rl::getColor(0x101010FF));
 
             game.draw(deltaTime);
             game_ui(&game);
@@ -112,10 +109,11 @@ fn void game_ui(Simulation* game) {
     rl::drawText(rl::textFormat("%d", game.getLivingCells()), 122, cst::PDG_TOP-24, 21, rl::GREEN);
 }
 
-alias Grid_game = Grid {cst::SZ_CLS_GRID};
 
 fn void init(String title) @public
 {
+    rl::setConfigFlags(rl::FLAG_WINDOW_UNDECORATED);
+
     rl::initWindow(cst::M_WTH, cst::M_HHT, title);
     defer rl::closeWindow();
 
