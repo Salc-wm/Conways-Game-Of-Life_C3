@@ -1,38 +1,28 @@
-module grid_cells{SIZE_X, SIZE_Y} @local;
+module grid_cells{POS_X, POS_Y} @local;
 
 import cst;
 import raylib5::rl;
 
+import std::io;
 import std::math;
 
 /* 
  Type of vector arrays directly affects the lifetime and interaction
  int: will last longer than > short: will last longer than char.
  but it could also be just crazy on my part, I didn't do a lot of tests to be sure */
-typedef Size_grid @public = uint[SIZE_X][SIZE_Y];
+typedef Size_grid @public = bool[POS_X][POS_Y];
 
-struct Grid @compact @public
+struct Grid @public
 {
     uint rows, columns, l_cells;
     Size_grid cells;
 }
 
-const Color GRD_CELL_DEAD = {65, 65, 65, 255};
-const Color GRD_CELL_LIFE = {0, 25, 0, 255};
-
-const ushort AC  = cst::PDG_TOP - 2;
-const ushort CCZ = cst::GRD_CELL_SIZE -1;
-
-const ushort PADD = cst::PADD_COUNTER_BOX + 2;
-const ushort PADD_TOP = cst::PDG_TOP - cst::PDG_LR;
-
 const Rectangle RECT = {
-    cst::M_WTH, cst::M_HHT + PADD_TOP,
-    CCZ, CCZ // Largura e altura do retângulo
+    cst::M_WTH, cst::M_HHT + cst::PADD_TOP,
+    cst::CCZ, cst::CCZ // Largura e altura do retângulo
 };
 
-const Rectangle RECT_GA  = {4, PADD_TOP, cst::WTH, cst::HHT};
-const Vector2   RECT_POS = { 0.0f, 0.0f };
 
 fn void drawGridLines(
     bool vertical, int start, int count,
@@ -62,34 +52,34 @@ fn void drawGridLines(
     }
 }
 
-fn void drawGrid2D(int cellCount, int cellSize) @local
+fn void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize) @public
 {   // Calcula o tamanho total do grid
     int gridWidth  = cst::WTH;
-    int gridHeight = cst::WTH;
+    int gridHeight = cst::HHT * 2 - cst::PDG_TOP - 20;
 
     // Centraliza o grid na tela
     int startX = cst::PDG_LR - 6;
-    int startY = PADD_TOP +1;
+    int startY = cst::PADD_TOP +1;
 
     // Vertical
-    drawGridLines(true, startX, cellCount, startY, gridHeight, cellSize, cst::HHT);
+    drawGridLines(true, startX, cellCount, startY, gridHeight+100, cellSize, cst::HHT);
 
     // Horizontal
     drawGridLines(false, startY, cellCount, startX, gridWidth, cellSize, cst::PDG_TOP);
 }
 
 
-macro void Grid.setValue(Grid* self, Table *grid, int value) => self.cells[grid.x][grid.y] = value;
-macro int Grid.getValue(Grid* self, Table grid) @public => self.cells[grid.x][grid.y];
+fn void Grid.setValue(Grid* self, int x, int y, bool value) @public => self.cells[x][y] = value;
+fn bool Grid.getValue(Grid* self, int x, int y) @public => self.cells[x][y];
 
 macro uint Grid.getRows(Grid* self)    @public => self.rows;
 macro uint Grid.getColumns(Grid* self) @public => self.columns;
 
-macro void Grid.setLivingCells(Grid* self) @public => self.l_cells++;
+// fn void Grid.setLivingCells(Grid* self) @public => self.l_cells++;
 
 fn void Grid.fillRandomCells(Grid* self) @public {
     foreach (&row: self.cells) foreach (&column: row)
-        *column = (rl::getRandomValue(0, 4) == 4)? 1:0;
+        *column = (rl::getRandomValue(0, 4) == 4)? true:false;
 
     self.l_cells = 1;
 }
@@ -103,21 +93,19 @@ fn void Grid.clear(Grid *self) @public {
         *column = {};
 }
 
-macro void Grid.toggleCell(Grid* self, Table *grid, ushort v = 1) @public =>
-    self.setValue(grid, v);
-
 
 fn void Grid.drawCells(Grid* self, double deltaTime) @public {
-    rl::drawRectanglePro(RECT_GA, RECT_POS, 0.0f, GRD_CELL_DEAD);
-    drawGrid2D(180, cst::GRD_CELL_SIZE);
+    ushort ac = cst::AC;
+    ushort padd = cst::PADD;
 
-    foreach (ushort idxr, &row: self.cells) {
-        uint grid_column = idxr * cst::GRD_CELL_SIZE + AC;
+    ushort cellSize = cst::CELL_SIZE;
+    Color grd_cellLife = cst::GRD_CELL_LIFE;
 
-        foreach (ushort idxc, column: *row)
-            if (column) rl::drawRectanglePro(
-                RECT, { (float)idxc * cst::GRD_CELL_SIZE + PADD, grid_column },
-                0.0f, column ? GRD_CELL_LIFE : GRD_CELL_DEAD
-            );
+    foreach (ushort idx_r, &row: self.cells) {
+        uint gridColumn = idx_r * cellSize + ac;
+
+        foreach (ushort idx_c, column: *row)
+            if (column) rl::
+                drawRectanglePro(RECT, {(float)idx_c * cellSize + padd, gridColumn}, 0.0f, grd_cellLife );
     }
 }

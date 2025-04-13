@@ -1,7 +1,7 @@
 module gofl_rylib5::system_rl5 @local;
 
 import cst;
-import gofl_simul;
+import simul;
 
 import raylib5::rl;
 
@@ -11,7 +11,7 @@ macro bool key_pressed($key) => rl::isKeyPressed($key);
 /**
  * @require row >= 0, column >= 0
  **/
-macro Table @get_grid_rc(uint row, column) => { row / cst::GRD_CELL_SIZE, column / cst::GRD_CELL_SIZE };
+// macro Table @get_grid_rc(uint row, column) => { row / cst::GRD_CELL_SIZE, column / cst::GRD_CELL_SIZE };
 macro float @subtract_float(double #a, double #b) => (float)(#a - #b);
 
 macro void center_draw_text(Text_opt args, Color color, bool align = true) =>
@@ -25,13 +25,13 @@ const Color[3] CL_TEXTS_TITLE = { COLOR_TEXT, rl::GREEN, COLOR_TEXT };
 const Color[2] CL_TEXTS_STATE = { rl::GREEN, rl::GRAY };
 
 
-fn Table get_grid_mouse_pos() @inline {
+/*fn Table get_grid_mouse_pos() @inline {
     Vector2 mouse_position = rl::getMousePosition();
 
     return @get_grid_rc(
         (int)mouse_position.y - cst::PDG_TOP, (int)mouse_position.x
     );
-}
+}*/
 
 fn void keyboard_actions(Simulation* game) {
     if (key_pressed(rl::KEY_ENTER) || key_pressed(rl::KEY_SPACE)) {
@@ -44,7 +44,7 @@ fn void keyboard_actions(Simulation* game) {
         game.stop();
     };
 
-    Table grid_hover_mouse = get_grid_mouse_pos();
+    // Table grid_hover_mouse = get_grid_mouse_pos();
     // game.toggleCell(grid_hover_mouse, rl::isMouseButtonPressed(MouseButton.LEFT)? true:false, 1);
     // game.toggleCell(grid_hover_mouse, rl::isMouseButtonPressed(MouseButton.RIGHT), 0);
 
@@ -59,14 +59,19 @@ fn void gofl_update(Simulation game) {
     float timeCounter = 0.0f;           // Accumulative time counter (seconds)
     float updateDrawTime = 0.0;         // Update + Draw time
 
+    ushort cell_size = cst::CELL_SIZE;
+
     while (!rl::windowShouldClose())
     {
-        game.update(deltaTime);
-
         rl::beginDrawing();
             rl::clearBackground(rl::getColor(0x101010FF));
 
+            rl::drawRectanglePro(cst::RECT_GA, cst::RECT_POS, 0.0f, cst::GRD_CELL_DEAD);
+            game.grid.drawGrid2D(180, cell_size);
+
             game.draw(deltaTime);
+            game.update(deltaTime);
+
             game_ui(&game);
 
         rl::endDrawing();
@@ -106,7 +111,7 @@ fn void game_ui(Simulation* game) {
     game.@isRunning()?
         center_draw_text(cst::GUI_TEXTS_STATE[0], CL_TEXTS_STATE[0]):center_draw_text(cst::GUI_TEXTS_STATE[1], CL_TEXTS_STATE[1]);
 
-    rl::drawText(rl::textFormat("%d", game.getLivingCells()), 122, cst::PDG_TOP-24, 21, rl::GREEN);
+    // rl::drawText(rl::textFormat("%d", game.getLivingCells()), 122, cst::PDG_TOP-24, 21, rl::GREEN);
 }
 
 
@@ -117,15 +122,13 @@ fn void init(String title) @public
     rl::initWindow(cst::M_WTH, cst::M_HHT, title);
     defer rl::closeWindow();
 
-    rl::setTargetFPS(0);
-
+    rl::setTargetFPS(cst::FPS);
 
     // Game State: run | Living cells: l_cells | Grid 1/Grid 2: grid
     Grid_game game = {
-        (cst::M_HHT - cst::PDG_TOP) / cst::GRD_CELL_SIZE,
-        cst::M_WTH / cst::GRD_CELL_SIZE, 0, {}
+        (cst::M_HHT - cst::PDG_TOP) / cst::CELL_SIZE,
+        cst::M_WTH / cst::CELL_SIZE, 0, {}
     };
 
-    gofl_update
-        ({ .grid = game });
+    gofl_update({ .grid = game });
 }
