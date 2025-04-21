@@ -1,19 +1,19 @@
 import raylib5::rl;
-import grid_cells;
+import grid_size;
 
 
 const ushort FPS = 165;
 const float UPDATE_INTERVAL = 0.09f;
 
-// No leave less than 4, crash -> below 7 performance issues
+// No leave less than 2, crash -> below 5 performance issues
 // problem Grid, if you directly change the CCZ of the grid file, any size is valid
-const char CELL_SIZE = 10;
+const char CELL_SIZE = 8;
 
 const char PDG_TOP = 80;
 const char PDG_LR = 10;
 
 const uint HHT = 800;
-const uint WTH = 1650;
+const uint WTH = 1700;
 
 const uint M_HHT = HHT + PDG_TOP;  // Height - Altura
 const uint M_WTH = WTH + PDG_LR;   // Width - largura
@@ -28,14 +28,10 @@ const ushort CENTER_TEXT = WTH/ 2 - PDG_TOP;
 const Color GRD_CELL_LIFE = {0, 25, 0, 255};
 const Color GRD_CELL_DEAD = {65, 65, 65, 255};
 
-const ushort AC  = cst::PDG_TOP - 2;
 const ushort CCZ = cst::CELL_SIZE -1;
-
-const ushort PADD = cst::PADD_COUNTER_BOX + 2;
 const ushort PADD_TOP = cst::PDG_TOP - cst::PDG_LR;
 
-
-const Rectangle RECT_GA  = {4, PADD_TOP, cst::WTH, cst::HHT};
+const Rectangle RECT_GA  = {4, PADD_TOP+2, cst::WTH, cst::HHT};
 const Vector2   RECT_POS = { 0.0f, 0.0f };
 
 
@@ -48,7 +44,7 @@ const int[<3>] BORDER = {
 
 typedef Table = uint[<2>];
 
-alias MatrixG = Size_grid{cst::SZ_GRID_WTH, cst::SZ_GRID_HHT};
+alias MatrixG = Size_grid{cst::SZ_GRID_WTH -1, cst::SZ_GRID_HHT -1};
 const MatrixG TMP_GRD = {};
 
 

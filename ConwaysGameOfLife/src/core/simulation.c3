@@ -1,10 +1,10 @@
 module simul;
 
 import cst;
-import grid_cells;
+import grid_rendering;
 
 
-alias Grid_game = Grid {cst::SZ_GRID_WTH, cst::SZ_GRID_HHT};
+alias Grid_game = Grid;
 
 struct Simulation
 {
@@ -26,34 +26,36 @@ macro bool Simulation.isWithinBounds(self, Table grid) @local =>
     grid.x < self.grid.rows && grid.y < self.grid.columns;
 
 
-macro uint[2] get_coordinates(int pos, int grid) @local =>
-    { (pos - 1 + grid) % grid, (pos + 1) % grid };
+// macro uint[2] get_coordinates(int pos, int grid) @local =>
+//    { (pos - 1 + grid) % grid, (pos + 1) % grid };
 
-macro void Simulation.neighbor_check(self, int *cells, int pos, coor_x, coor_y, char mp) {
-    int mp_coord = coor_x[mp];
+macro int[3] calculateNeighborCoordinates(int pos, int size) @local => {
+    (size & (size - 1)) == 0 ?
+        (pos - 1) & (size - 1) : (pos - 1 + size) % size,  // anterior
+    pos,                                                   // atual
+    (size & (size - 1)) == 0 ?
+        (pos + 1) & (size - 1) : (pos + 1) % size          // próximo
+};
 
-    *cells += (char)self.grid.cells[mp_coord][coor_y[0]];  // Superior Esquerdo | Direito
-    *cells += (char)self.grid.cells[mp_coord][pos];        // Esquerdo | Direito
-    *cells += (char)self.grid.cells[mp_coord][coor_y[1]];  // Inferior Esquerdo | Direito
-}
-
-fn uint Simulation.countLiveNeighbors(self, short x, short y, int live_neighbors = 0) @local {
+macro uint Simulation.countLiveNeighbors(self, short x, short y, uint count = 0) @local {
     int rows = self.grid.getRows();
     int cols = self.grid.getColumns();
 
-    // int minus = (x - 1 + rows) % rows;
-    // int plus  = (x + 1) % rows;
-    int[2] x_mp_coor = get_coordinates(x, rows);
-    int[2] y_mp_coor = get_coordinates(y, cols);
+    int[3] x_coords = calculateNeighborCoordinates(x, rows);
+    int[3] y_coords = calculateNeighborCoordinates(y, cols);
 
-    // Verificação direta dos 8 vizinhos, eliminando o loop foreach
-    self.neighbor_check(&live_neighbors, y, x_mp_coor, y_mp_coor, 0);
+    bool[] row_prev = &self.grid.cells[x_coords[0]];
+    bool[] row_curr = &self.grid.cells[x_coords[1]];
+    bool[] row_next = &self.grid.cells[x_coords[2]];
 
-    live_neighbors += (char)self.getValue(x, (short)y_mp_coor[0]);  // Superior
-    live_neighbors += (char)self.getValue(x, (short)y_mp_coor[1]);  // Inferior
-
-    self.neighbor_check(&live_neighbors, y, x_mp_coor, y_mp_coor, 1);
-    return live_neighbors;
+    return (
+        // Linha superior
+        (uint)row_prev[y_coords[0]] + (uint)row_prev[y_coords[1]] + (uint)row_prev[y_coords[2]] +
+        // Linha do meio (excluindo centro)
+        (uint)row_curr[y_coords[0]] + (uint)row_curr[y_coords[2]] +
+        // Linha inferior
+        (uint)row_next[y_coords[0]] + (uint)row_next[y_coords[1]] + (uint)row_next[y_coords[2]]
+    );
 }
 
 macro void Simulation.draw(self, double deltaTime) => self.grid.drawCells(deltaTime);
@@ -72,12 +74,12 @@ macro bool Simulation.@isRunning(self) => self.run;
 macro void Simulation.createRandomState(Simulation* self) => self.grid.fillRandomCells();
 
 
-fn void Simulation.processRow(Simulation* self, MatrixG* temp_grid, ushort y, ushort idx_r) @local {
+fn void Simulation.processRow(Simulation* self, MatrixG* temp_grid, ushort y, ushort idx_r) @local @inline {
     for (ushort idx_c = 0; idx_c < y; idx_c++) {
         int live_neighbors = self.countLiveNeighbors(idx_r, idx_c);
 
         bool cell_value = self.getValue(idx_r, idx_c);
-        bool will_live = live_neighbors == 3 || cell_value && (live_neighbors == 2);
+        bool will_live = (live_neighbors == 3) | (cell_value & (live_neighbors == 2));
         // if (live_neighbors != 3 || cell_value && (live_neighbors != 2)) continue; << degradation animation
 
         if (!will_live) continue;
@@ -85,7 +87,7 @@ fn void Simulation.processRow(Simulation* self, MatrixG* temp_grid, ushort y, us
     }
 }
 
-fn void Simulation.update(Simulation* self, double deltaTime) {
+fn void Simulation.update(Simulation* self, double deltaTime) @inline {
     if (!self.@isRunning() || self.grid.l_cells == 0) return;
         // self.cells_live = self.grid.l_cells;
         //return;
