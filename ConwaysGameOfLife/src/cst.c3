@@ -7,13 +7,13 @@ const float UPDATE_INTERVAL = 0.09f;
 
 // No leave less than 2, crash -> below 5 performance issues
 // problem Grid, if you directly change the CCZ of the grid file, any size is valid
-const char CELL_SIZE = 8;
+const char CELL_SIZE = 5;
 
 const char PDG_TOP = 80;
 const char PDG_LR = 10;
 
 const uint HHT = 800;
-const uint WTH = 1700;
+const uint WTH = 1800;
 
 const uint M_HHT = HHT + PDG_TOP;  // Height - Altura
 const uint M_WTH = WTH + PDG_LR;   // Width - largura
@@ -35,14 +35,14 @@ const Rectangle RECT_GA  = {4, PADD_TOP+2, cst::WTH, cst::HHT};
 const Vector2   RECT_POS = { 0.0f, 0.0f };
 
 
-const int[<3>] BORDER = {
+const short[<3>] BORDER = {
     PDG_TOP - 3,
 
     M_WTH - PDG_LR,
     M_HHT - PDG_TOP
 };
 
-typedef Table = uint[<2>];
+typedef Table = short[<2>];
 
 alias MatrixG = Size_grid{cst::SZ_GRID_WTH -1, cst::SZ_GRID_HHT -1};
 const MatrixG TMP_GRD = {};

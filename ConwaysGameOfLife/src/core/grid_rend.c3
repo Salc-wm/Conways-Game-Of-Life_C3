@@ -1,18 +1,16 @@
-module grid_rendering @local;
+module grid_rendering @public;
 
 import cst;
 import raylib5::rl;
 
-import std::io;
 
-
-struct Grid @public
+struct Grid @compact
 {
     uint rows, columns, l_cells;
     MatrixG cells;
 }
 
-const Rectangle RECT = {
+const Rectangle RECT @local = {
     cst::M_WTH, cst::M_HHT + cst::PADD_TOP,
     cst::CCZ, cst::CCZ // Largura e altura do retângulo
 };
@@ -21,7 +19,7 @@ const Rectangle RECT = {
 fn void drawGridLines(
     bool vertical, int start, int count,
     int fixedStart, int fixedLength, int cellSize, int adjust = 0
-) @inline {
+) @local {
     //int limit = vertical ? count + (cst::M_WTH / count) * 12: count;
     int limit = vertical ? (cst::M_WTH + cellSize - 1) / cellSize : (cst::HHT + cellSize - 1) / cellSize;
 
@@ -47,7 +45,7 @@ fn void drawGridLines(
     }
 }
 
-fn void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize) @inline @public
+fn void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize) @inline
 {   // Calcula o tamanho total do grid
     int gridWidth  = cst::WTH;
     int gridHeight = cst::HHT * 2 - cst::PDG_TOP - 20;
@@ -64,27 +62,27 @@ fn void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize) @inline @public
 }
 
 
-fn void Grid.setValue(Grid* self, int x, int y, bool value) @inline @public => self.cells[x][y] = value;
-fn bool Grid.getValue(Grid* self, int x, int y) @inline @public => self.cells[x][y];
+fn void Grid.setValue(Grid* self, int x, int y, bool value) @inline => self.cells[x][y] = value;
+fn bool Grid.getValue(Grid* self, int x, int y) @inline => self.cells[x][y];
 
-macro uint Grid.getRows(Grid* self)    @public => self.rows;
-macro uint Grid.getColumns(Grid* self) @public => self.columns;
+macro uint Grid.getRows(Grid* self)    => self.rows;
+macro uint Grid.getColumns(Grid* self) => self.columns;
 
 // fn void Grid.setLivingCells(Grid* self) @public => self.l_cells++;
 
-fn void Grid.fillRandomCells(Grid* self) @public {
+fn void Grid.fillRandomCells(Grid* self) {
     uint totalColumns = self.cells[0].len;
     uint totalCells = self.cells.len * totalColumns;
 
     bool* cellData = &self.cells[0][0];
 
     for (uint cells = 0; cells < totalCells; cells++) cellData[
-        cells ] = (rl::getRandomValue(0, 4) == 4);
+        cells ] = rl::getRandomValue(0, 4) == 4;
 
     self.l_cells = 1;
 }
 
-fn void Grid.clear(Grid *self) @public {
+macro void Grid.clear(Grid *self) {
     if (self.l_cells == 0) return;
 
     self.l_cells = 0;
@@ -96,7 +94,7 @@ fn void Grid.clear(Grid *self) @public {
 
 // NOTE: Changes the way horizontal cell positions are rendered from the end, the screen to pos 0 onwards
 // : idx_c <
-fn void Grid.drawCells(Grid* self, double deltaTime) @inline @public {
+fn void Grid.drawCells(Grid* self, double deltaTime) {
     if (self.l_cells == 0) return;
 
     float cellSize = cst::CELL_SIZE;
