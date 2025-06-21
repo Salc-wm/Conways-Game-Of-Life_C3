@@ -21,25 +21,33 @@ const Rectangle RECT @local = {
     cst::CCZ, cst::CCZ // Largura e altura do retângulo
 };
 
+
+macro void drawLineIn(int start, int init, int end_x, int end_y) @local =>
+    rl::drawLine(start, init, end_x, end_y, rl::fade(rl::BLACK, 0.5f));
+
 fn void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize) @inline
-{   // Calcula o tamanho total do grid
-    int gridWidth  = cst::WTH;
+{
+    int gridWidth  = cst::WTH +6;
     int gridHeight = cst::HHT * 2 - cst::PDG_TOP - 20;
 
     int gridDrawStartX = 3;
-    int gridDrawStartY = 80;
+    int gridDrawStartY = 71;
+
     int gridDrawEndX = gridWidth - 1;
     int gridDrawEndY = gridHeight - 4;
 
-    for (int x = gridDrawStartY; x <= gridDrawEndX; x += cellSize) {
-        rl::drawLine(x, gridDrawStartY, x, gridDrawEndY, rl::fade(rl::BLACK, 0.5f));
-    }
+    int gridDrawEndYBelow = cst::HHT + 71;
+    int gridDrawEndYInit = 4;
 
-    // Desenha as linhas horizontais
-    for (int y = gridDrawStartY; y <= gridDrawEndY; y += cellSize) {
-        rl::drawLine(gridDrawStartX, y, gridDrawEndX, y, rl::fade(rl::BLACK, 0.5f));
-    }
+    // Vertical
+    for (int x = gridDrawEndYInit; x <= gridDrawEndX; x += cellSize
+    ) drawLineIn(x, gridDrawStartY, x, gridDrawEndYBelow);
+
+    // Horizontal
+    for (int y = gridDrawStartY; y <= gridDrawEndY; y += cellSize
+    ) drawLineIn(gridDrawStartX, y, gridDrawEndX, y);
 }
+
 
 
 fn void Grid.setValue(Grid* self, int x, int y, bool value) @inline => self.cells[x][y] = value;
