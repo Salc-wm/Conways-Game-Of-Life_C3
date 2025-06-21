@@ -25,50 +25,6 @@ macro bool Simulation.getValue(self, short x, short y) @local => self.grid.getVa
 macro bool Simulation.isWithinBounds(self, Table grid) @local =>
     grid.x < self.grid.rows && grid.y < self.grid.columns;
 
-
-// macro uint[2] get_coordinates(int pos, int grid) @local =>
-//    { (pos - 1 + grid) % grid, (pos + 1) % grid };
-
-macro int[3] calculateNeighborCoordinates(int pos, int size) @local => {
-    (size & (size - 1)) == 0 ?
-        (pos - 1) & (size - 1) : (pos - 1 + size) % size,  // anterior
-    pos,                                                   // atual
-    (size & (size - 1)) == 0 ?
-        (pos + 1) & (size - 1) : (pos + 1) % size          // próximo
-};
-
-macro uint Simulation.@countLiveNeighbors(&self, short #x, short #y, uint count = 0) @local {
-    int rows = self.grid.getRows();
-    int cols = self.grid.getColumns();
-
-    int[3] x_coords = calculateNeighborCoordinates(#x, rows);
-    int[3] y_coords = calculateNeighborCoordinates(#y, cols);
-
-    bool[] row_prev = &self.grid.cells[x_coords[0]];
-    bool[] row_curr = &self.grid.cells[x_coords[1]];
-    bool[] row_next = &self.grid.cells[x_coords[2]];
-
-    uint bits =
-        ((uint)row_prev[y_coords[0]] << 0) |
-        ((uint)row_prev[y_coords[1]] << 1) |
-        ((uint)row_prev[y_coords[2]] << 2) |
-        ((uint)row_curr[y_coords[0]] << 3) |
-        ((uint)row_curr[y_coords[2]] << 4) |
-        ((uint)row_next[y_coords[0]] << 5) |
-        ((uint)row_next[y_coords[1]] << 6) |
-        ((uint)row_next[y_coords[2]] << 7);
-
-    return $$popcount(bits);
-    /*return (
-        // Linha superior
-        (uint)row_prev[y_coords[0]] + (uint)row_prev[y_coords[1]] + (uint)row_prev[y_coords[2]] +
-        // Linha do meio (excluindo centro)
-        (uint)row_curr[y_coords[0]] + (uint)row_curr[y_coords[2]] +
-        // Linha inferior
-        (uint)row_next[y_coords[0]] + (uint)row_next[y_coords[1]] + (uint)row_next[y_coords[2]]
-    );*/
-}
-
 macro void Simulation.draw(self, double deltaTime) => self.grid.drawCells(deltaTime);
 macro void Simulation.clearGrid(Simulation* self)  => self.grid.clear();
 
