@@ -83,18 +83,28 @@ macro void Simulation.start(Simulation* self) @used => self.run = true;
 
 macro void Simulation.createRandomState(Simulation* self) => self.grid.fillRandomCells();
 
+macro int getGridPos(pos, $neighbor, line) => (pos + $neighbor + line) % line;
+macro void setGrid(MatrixG *grid, int x, int y, bool mode) => (*grid)[x][y] = mode;
 
-fn void Simulation.processRow(Simulation* self, MatrixG* temp_grid, ushort y, ushort idx_r) @local @inline {
-    for (ushort idx_c = 0; idx_c < y; idx_c++) {
-        int live_neighbors = self.@countLiveNeighbors(idx_r, idx_c);
 
-        bool cell_value = self.getValue(idx_r, idx_c);
-        bool will_live = (live_neighbors == 3) | (cell_value & (live_neighbors == 2));
-        // if (live_neighbors != 3 || cell_value && (live_neighbors != 2)) continue; << degradation animation
+const int COLS @local = cst::HHT / cst::CELL_SIZE;
+const int ROWS @local = cst::WTH / cst::CELL_SIZE;
 
-        if (!will_live) continue;
-        (*temp_grid)[idx_r][idx_c] = true;
-    }
+macro int @countNeighbors(MatrixG grid, int #x, int y) {
+    var sum = 0;
+    var x_cols = 0;
+
+    $for var $x_coord = -1; $x_coord < 2; $x_coord++:
+        x_cols = getGridPos(#x, $x_coord, COLS);
+
+        $for var $y_coord = -1; $y_coord < 2; $y_coord++:
+            sum += (char) grid[x_cols]
+                [getGridPos(y, $y_coord, ROWS)
+            ];
+        $endfor
+    $endfor
+
+    return sum - (char) grid[#x][y];
 }
 
 fn void Simulation.update(Simulation* self, double deltaTime) {
@@ -107,13 +117,18 @@ fn void Simulation.update(Simulation* self, double deltaTime) {
     if (self.timer < cst::UPDATE_INTERVAL) return;
     self.timer = 0.0f;
 
-    MatrixG  matrix = cst::TMP_GRD;
-    MatrixG* temp_grid = &matrix;
+    MatrixG temp_grid = self.grid.cells;
+    defer self.grid.cells = temp_grid;
 
-    ushort vetor_y = cst::TMP_GRD[0].len;
+    self.grid.cells_l.init(self.mem);
 
-    for (ushort idx_r = 0; idx_r < cst::TMP_GRD.len; idx_r++) self
-        .processRow(&(*temp_grid), vetor_y, idx_r);
+    foreach (int x, &col : temp_grid) foreach (int y, _n : col) {
+        bool state = self.getValue(x, y);
+        int neighbors = @countNeighbors(self.grid.cells, x, y);
 
-    self.grid.cells = *temp_grid;
+        bool new_state = (state & (neighbors == 2 || neighbors == 3)) | (!state && neighbors == 3);
+
+        if (new_state != state) setGrid(&temp_grid, x, y, new_state);
+        if (new_state) self.grid.cells_l.push({x, y});
+    }
 }
