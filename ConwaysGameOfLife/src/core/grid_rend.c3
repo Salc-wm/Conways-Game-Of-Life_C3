@@ -51,11 +51,11 @@ fn void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize) @inline
     int gridHeight = cst::HHT * 2 - cst::PDG_TOP - 20;
 
     // Centraliza o grid na tela
-    int startX = cst::PDG_LR - 6;
+    int startX = cst::PDG_LR -6;
     int startY = cst::PADD_TOP +1;
 
     // Vertical
-    drawGridLines(true, startX, cellCount, startY, gridHeight+100, cellSize, cst::HHT);
+    drawGridLines(true, startX -16, cellCount, startY, gridHeight+100, cellSize, cst::HHT);
 
     // Horizontal
     drawGridLines(false, startY, cellCount, startX, gridWidth, cellSize);
@@ -92,33 +92,24 @@ macro void Grid.clear(Grid *self) {
 }
 
 
-// NOTE: Changes the way horizontal cell positions are rendered from the end, the screen to pos 0 onwards
-// : idx_c <
+const char AC @local = cst::PDG_TOP - 3;
+
 fn void Grid.drawCells(Grid* self, double deltaTime) {
     if (self.l_cells == 0) return;
 
     float cellSize = cst::CELL_SIZE;
     Color grd_cellLife = cst::GRD_CELL_LIFE;
 
-    uint totalColumns = self.cells[0].len;
-    uint totalCells = self.cells.len * totalColumns;
+    int ccz = (int)cellSize - 2;
 
-    float cellWthSize = totalColumns * cellSize;
-    float cellHhtSize = ((float)totalCells / totalColumns + 1) * cellSize;
+    foreach (char idxr, &row: self.cells) foreach (char idxc, column: *row) {
+        float grid_row = idxc * cellSize + 6;
+        float grid_column = idxr * cellSize + AC;
 
-    for (uint rows = 0; rows < totalCells; rows++) {
-        uint idx_r = rows / totalColumns;
-        uint idx_c = rows % totalColumns;
-
-        // Size screen width | Cell width size | Padding
-        float paddLeftGrid   = cst::WTH   - cellWthSize + (6 + cellSize);
-        float paddBottonGrid = cst::M_HHT - cellHhtSize + 2* cellSize -2;
-
-        if (self.cells[idx_r][idx_c]) rl::
-            drawRectanglePro(RECT, {
-                // Pos | Space | Start Padding
-                idx_c * cellSize + paddLeftGrid,   // X
-                idx_r * cellSize + paddBottonGrid  // Y
-            }, 0.0f, grd_cellLife);
+        if (column) rl::
+            drawRectangle(
+                (int) grid_row, (int) grid_column,
+                ccz, ccz, grd_cellLife
+            );
     }
 }
