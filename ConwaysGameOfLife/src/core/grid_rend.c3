@@ -1,90 +1,68 @@
-module grid_rendering @local;
+module grid_rendering @public;
+import std::collections::list;
 
-import cst;
+import cst, std::io;
 import raylib5::rl;
 
-import std::io;
 
+typedef CellPos = int[<2>];
+alias ListCellPos = List {CellPos};
 
-struct Grid @public
+struct Grid
 {
     uint rows, columns, l_cells;
     MatrixG cells;
+
+    ListCellPos cells_l;
 }
 
-const Rectangle RECT = {
+const Rectangle RECT @local = {
     cst::M_WTH, cst::M_HHT + cst::PADD_TOP,
     cst::CCZ, cst::CCZ // Largura e altura do retângulo
 };
 
-
-fn void drawGridLines(
-    bool vertical, int start, int count,
-    int fixedStart, int fixedLength, int cellSize, int adjust = 0
-) @inline {
-    //int limit = vertical ? count + (cst::M_WTH / count) * 12: count;
-    int limit = vertical ? (cst::M_WTH + cellSize - 1) / cellSize : (cst::HHT + cellSize - 1) / cellSize;
-
-    int startX = vertical ? 0 : fixedStart;
-    int startY = vertical ? fixedStart - 2 : 0;
-
-    int endX = vertical ? 0 : fixedStart + fixedLength;
-    int endY = vertical ? fixedStart + fixedLength - adjust : 0;
-
-    Color color_line = rl::fade(rl::BLACK, 0.5f);
-
-    for (int lines = 0; lines <= limit; lines++) {
-        int pos = start + lines * cellSize;
-
-        rl::drawLine(
-            vertical ? pos    : startX,
-            vertical ? startY : pos,
-            vertical ? pos    : endX,
-            vertical ? endY   : pos,
-
-            color_line
-        );
-    }
-}
-
-fn void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize) @inline @public
+fn void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize) @inline
 {   // Calcula o tamanho total do grid
     int gridWidth  = cst::WTH;
     int gridHeight = cst::HHT * 2 - cst::PDG_TOP - 20;
 
-    // Centraliza o grid na tela
-    int startX = cst::PDG_LR - 6;
-    int startY = cst::PADD_TOP +1;
+    int gridDrawStartX = 3;
+    int gridDrawStartY = 80;
+    int gridDrawEndX = gridWidth - 1;
+    int gridDrawEndY = gridHeight - 4;
 
-    // Vertical
-    drawGridLines(true, startX, cellCount, startY, gridHeight+100, cellSize, cst::HHT);
+    for (int x = gridDrawStartY; x <= gridDrawEndX; x += cellSize) {
+        rl::drawLine(x, gridDrawStartY, x, gridDrawEndY, rl::fade(rl::BLACK, 0.5f));
+    }
 
-    // Horizontal
-    drawGridLines(false, startY, cellCount, startX, gridWidth, cellSize);
+    // Desenha as linhas horizontais
+    for (int y = gridDrawStartY; y <= gridDrawEndY; y += cellSize) {
+        rl::drawLine(gridDrawStartX, y, gridDrawEndX, y, rl::fade(rl::BLACK, 0.5f));
+    }
 }
 
 
-fn void Grid.setValue(Grid* self, int x, int y, bool value) @inline @public => self.cells[x][y] = value;
-fn bool Grid.getValue(Grid* self, int x, int y) @inline @public => self.cells[x][y];
+fn void Grid.setValue(Grid* self, int x, int y, bool value) @inline => self.cells[x][y] = value;
+fn bool Grid.getValue(Grid* self, int x, int y) @inline => self.cells[x][y];
 
-macro uint Grid.getRows(Grid* self)    @public => self.rows;
-macro uint Grid.getColumns(Grid* self) @public => self.columns;
+macro uint Grid.getRows(Grid* self)    => self.rows;
+macro uint Grid.getColumns(Grid* self) => self.columns;
 
 // fn void Grid.setLivingCells(Grid* self) @public => self.l_cells++;
 
-fn void Grid.fillRandomCells(Grid* self) @public {
+fn void Grid.fillRandomCells(Grid* self) {
     uint totalColumns = self.cells[0].len;
     uint totalCells = self.cells.len * totalColumns;
 
     bool* cellData = &self.cells[0][0];
 
-    for (uint cells = 0; cells < totalCells; cells++) cellData[
-        cells ] = (rl::getRandomValue(0, 4) == 4);
+    for (uint cells = 0; cells < totalCells; cells++) cellData
+        [ cells ] = rl::getRandomValue(0, 8) == 3;
 
     self.l_cells = 1;
 }
 
-fn void Grid.clear(Grid *self) @public {
+macro void Grid.clear(Grid *self) {
     if (self.l_cells == 0) return;
 
     self.l_cells = 0;
@@ -94,33 +72,20 @@ fn void Grid.clear(Grid *self) @public {
 }
 
 
-// NOTE: Changes the way horizontal cell positions are rendered from the end, the screen to pos 0 onwards
-// : idx_c <
-fn void Grid.drawCells(Grid* self, double deltaTime) @inline @public {
+fn void Grid.drawCells(Grid* self, double deltaTime) @inline {
     if (self.l_cells == 0) return;
+    defer self.cells_l.free();
 
     float cellSize = cst::CELL_SIZE;
     Color grd_cellLife = cst::GRD_CELL_LIFE;
 
-    uint totalColumns = self.cells[0].len;
-    uint totalCells = self.cells.len * totalColumns;
-
-    float cellWthSize = totalColumns * cellSize;
-    float cellHhtSize = ((float)totalCells / totalColumns + 1) * cellSize;
-
-    for (uint rows = 0; rows < totalCells; rows++) {
-        uint idx_r = rows / totalColumns;
-        uint idx_c = rows % totalColumns;
-
+    if (self.cells_l.len() == 0) return;
+    foreach (cell: self.cells_l)
         // Size screen width | Cell width size | Padding
-        float paddLeftGrid   = cst::WTH   - cellWthSize + (6 + cellSize);
-        float paddBottonGrid = cst::M_HHT - cellHhtSize + 2* cellSize -2;
 
-        if (self.cells[idx_r][idx_c]) rl::
-            drawRectanglePro(RECT, {
-                // Pos | Space | Start Padding
-                idx_c * cellSize + paddLeftGrid,   // X
-                idx_r * cellSize + paddBottonGrid  // Y
-            }, 0.0f, grd_cellLife);
-    }
+        rl::drawRectanglePro(RECT, {
+            // Pos | Space | Start Padding
+            cell.y * cellSize + (6 + cellSize),  // X
+            cell.x * cellSize + cst::PDG_TOP + cellSize -2 // Y
+        }, 0.0f, grd_cellLife);
 }

@@ -2,18 +2,19 @@ import raylib5::rl;
 import grid_size;
 
 
-const ushort FPS = 165;
+const char FPS = 165;
 const float UPDATE_INTERVAL = 0.09f;
 
-// No leave less than 2, crash -> below 5 performance issues
-// problem Grid, if you directly change the CCZ of the grid file, any size is valid
-const char CELL_SIZE = 8;
+// Depending on the number of cells, it can drastically affect performance or prevent
+// the program from starting, due to the nature of a linear array.
+const char CELL_SIZE = 10;
 
 const char PDG_TOP = 80;
 const char PDG_LR = 10;
 
-const uint HHT = 800;
-const uint WTH = 1700;
+const uint HHT = 650;
+const uint WTH = 1200;
+
 
 const uint M_HHT = HHT + PDG_TOP;  // Height - Altura
 const uint M_WTH = WTH + PDG_LR;   // Width - largura
@@ -25,7 +26,8 @@ const ichar PADD_COUNTER_BOX = 4;
 const ushort CENTER_TEXT = WTH/ 2 - PDG_TOP;
 
 
-const Color GRD_CELL_LIFE = {0, 25, 0, 255};
+// const Color GRD_CELL_LIFE = {0, 25, 0, 255};
+const Color GRD_CELL_LIFE = {0, 255, 255, 255};
 const Color GRD_CELL_DEAD = {65, 65, 65, 255};
 
 const ushort CCZ = cst::CELL_SIZE -1;
@@ -35,7 +37,7 @@ const Rectangle RECT_GA  = {4, PADD_TOP+2, cst::WTH, cst::HHT};
 const Vector2   RECT_POS = { 0.0f, 0.0f };
 
 
-const int[<3>] BORDER = {
+const short[<3>] BORDER = {
     PDG_TOP - 3,
 
     M_WTH - PDG_LR,

@@ -1,12 +1,10 @@
 module gofl_rylib5::system_rl5 @local;
 
-import cst;
-import simul;
-
+import cst, simul;
 import raylib5::rl;
 
 
-macro bool key_pressed($key) => rl::isKeyPressed($key);
+macro bool @key_pressed($key) => rl::isKeyPressed($key);
 
 /**
  * @require row >= 0, column >= 0
@@ -33,35 +31,33 @@ const Color[2] CL_TEXTS_STATE = { rl::GREEN, rl::GRAY };
     );
 }*/
 
-fn void keyboard_actions(Simulation* game) {
-    if (key_pressed(rl::KEY_ENTER) || key_pressed(rl::KEY_SPACE)) {
-        if (!game.run) {
-            game.start();
+macro void @keyboard_actions(Simulation* #game) {
+    if (@key_pressed(rl::KEY_ENTER) || @key_pressed(rl::KEY_SPACE)) {
+        if (!#game.run) {
+            #game.start();
 
             return;
         }
 
-        game.stop();
+        #game.stop();
     };
 
     // Table grid_hover_mouse = get_grid_mouse_pos();
     // game.toggleCell(grid_hover_mouse, rl::isMouseButtonPressed(MouseButton.LEFT)? true:false, 1);
     // game.toggleCell(grid_hover_mouse, rl::isMouseButtonPressed(MouseButton.RIGHT), 0);
 
-    key_pressed(rl::KEY_F)? game.createRandomState() : (rl::isKeyPressed(rl::KEY_G) ? game.clearGrid() :(void)0);
+    @key_pressed(rl::KEY_F)? #game.createRandomState() : (@key_pressed(rl::KEY_G) ? #game.clearGrid() :(void)0);
 }
 
 fn void gofl_update(Simulation game) {
     double previousTime = rl::getTime();  // Previous time measure
-    double currentTime  = 0.0;            // Current time measure
+    double currentTime  = 0f;             // Current time measure
 
-    float deltaTime   = 0.0f;           // Frame time (Update + Draw + Wait time)
-    float timeCounter = 0.0f;           // Accumulative time counter (seconds)
-    float updateDrawTime = 0.0;         // Update + Draw time
+    float deltaTime   = 0f;             // Frame time (Update + Draw + Wait time)
+    float timeCounter = 0f;             // Accumulative time counter (seconds)
+    float updateDrawTime = 0f;          // Update + Draw time
 
-    ushort cell_size = cst::CELL_SIZE;
-
-    while (!rl::windowShouldClose())
+    while (ushort cell_size = cst::CELL_SIZE, !rl::windowShouldClose())
     {
         rl::beginDrawing();
             rl::clearBackground(rl::getColor(0x101010FF));
@@ -69,29 +65,25 @@ fn void gofl_update(Simulation game) {
             rl::drawRectanglePro(cst::RECT_GA, cst::RECT_POS, 0.0f, cst::GRD_CELL_DEAD);
             game.grid.drawGrid2D(180, cell_size);
 
-            game.draw(deltaTime);
             game.update(deltaTime);
+            game.draw(deltaTime);
 
             game_ui(&game);
-
         rl::endDrawing();
-        keyboard_actions(&game);
+        @keyboard_actions(&game);
 
-        currentTime = rl::getTime();
-        updateDrawTime = @subtract_float(currentTime, previousTime);
+        do {  // Framerate could be variable
+            currentTime = rl::getTime();
+            updateDrawTime = @subtract_float(currentTime, previousTime);
 
-        if (cst::FPS > 0) {  // We want a fixed frame rate
-            float targetFrameTime = 1.0f / cst::FPS;
+            float targetFrameTime = 1.0f / 144;
 
-            if (updateDrawTime < targetFrameTime) {
-                rl::waitTime(targetFrameTime - updateDrawTime);
-                deltaTime = @subtract_float(currentTime, previousTime);
-            }
-        }
+            if (updateDrawTime < targetFrameTime) rl::
+                waitTime(targetFrameTime - updateDrawTime);
 
-        // Framerate could be variable
-        deltaTime = updateDrawTime;
-        previousTime = currentTime;
+            deltaTime = @subtract_float(rl::getTime(), previousTime);
+            previousTime = currentTime;
+        };
     }
 }
 
@@ -108,27 +100,26 @@ fn void game_ui(Simulation* game) {
     center_draw_text({"Raylib 5 -> OpenGL", 112, cst::PDG_TOP-70, 16}, rl::ORANGE, false);
     rl::drawText(rl::textFormat("Elapsed Time: %02.02f ms", rl::getFrameTime()*1000), 10, 25, 19, rl::YELLOW);
 
-    game.@isRunning()?
-        center_draw_text(cst::GUI_TEXTS_STATE[0], CL_TEXTS_STATE[0]):center_draw_text(cst::GUI_TEXTS_STATE[1], CL_TEXTS_STATE[1]);
+    game.run?
+        center_draw_text(cst::GUI_TEXTS_STATE[0], CL_TEXTS_STATE[0]):
+        center_draw_text(cst::GUI_TEXTS_STATE[1], CL_TEXTS_STATE[1]);
 
     // rl::drawText(rl::textFormat("%d", game.getLivingCells()), 122, cst::PDG_TOP-24, 21, rl::GREEN);
 }
 
 
-fn void init(String title) @public
+macro void init(String $title = "GAME", int $fps = 0) @public
 {
-    rl::setConfigFlags(rl::FLAG_WINDOW_UNDECORATED);
+    rl::setConfigFlags(rl::FLAG_WINDOW_UNDECORATED | rl::FLAG_VSYNC_HINT);
 
-    rl::initWindow(cst::M_WTH, cst::M_HHT, title);
+    rl::initWindow(cst::M_WTH, cst::M_HHT, $title);
     defer rl::closeWindow();
 
-    rl::setTargetFPS(cst::FPS);
+    rl::setTargetFPS($fps? $fps: cst::FPS);
 
     // Game State: run | Living cells: l_cells | Grid 1/Grid 2: grid
-    Grid_game game = {
-        (cst::M_HHT - cst::PDG_TOP) / cst::CELL_SIZE,
-        cst::M_WTH / cst::CELL_SIZE, 0, {}
-    };
-
-    gofl_update({ .grid = game });
+    gofl_update({ .mem = tmem, .grid = (Grid_game) {
+        cst::TMP_GRD[0].len / cst::CELL_SIZE,
+        cst::TMP_GRD[1].len, 0, {}, {}
+    }});
 }
