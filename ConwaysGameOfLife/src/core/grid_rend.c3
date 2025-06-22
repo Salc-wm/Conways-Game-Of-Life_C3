@@ -16,49 +16,27 @@ const Rectangle RECT @local = {
 };
 
 
-fn void drawGridLines(
-    bool vertical, int start, int count,
-    int fixedStart, int fixedLength, int cellSize, int adjust = 0
-) @local {
-    //int limit = vertical ? count + (cst::M_WTH / count) * 12: count;
-    int limit = vertical ? (cst::M_WTH + cellSize - 1) / cellSize : (cst::HHT + cellSize - 1) / cellSize;
+const int INIT_LEFT @local = cst::M_WTH - cst::TOTALWIDTH -6;
+const int INIT_TOP  @local = cst::M_HHT - cst::TOTALHEIGHT - cst::PDG_LR;
 
-    int startX = vertical ? 0 : fixedStart;
-    int startY = vertical ? fixedStart - 2 : 0;
+macro void drawLineIn(int $start, int $init, int $end_x, int $end_y) @local =>
+    rl::drawLine($start, $init, $end_x, $end_y, rl::fade(rl::BLACK, 0.5f));
 
-    int endX = vertical ? 0 : fixedStart + fixedLength;
-    int endY = vertical ? fixedStart + fixedLength - adjust : 0;
+macro void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize)
+{
+    // rl::drawRectanglePro(cst::RECT_GA, cst::RECT_POS, 0.0f, cst::GRD_CELL_DEAD);
 
-    Color color_line = rl::fade(rl::BLACK, 0.5f);
+    var $x = 0;
+    $for var $cls_wdt = 0; $cls_wdt <= cst::TOTALCELLS_WIDTH; $cls_wdt++:  // Vertical
+        $x = INIT_LEFT + $cls_wdt * cst::CELL_SIZE;  // Adjust for padding/offset
+        drawLineIn($x, INIT_TOP, $x, INIT_TOP + cst::TOTALHEIGHT);
+    $endfor
 
-    for (int lines = 0; lines <= limit; lines++) {
-        int pos = start + lines * cellSize;
-
-        rl::drawLine(
-            vertical ? pos    : startX,
-            vertical ? startY : pos,
-            vertical ? pos    : endX,
-            vertical ? endY   : pos,
-
-            color_line
-        );
-    }
-}
-
-fn void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize) @inline
-{   // Calcula o tamanho total do grid
-    int gridWidth  = cst::WTH;
-    int gridHeight = cst::HHT * 2 - cst::PDG_TOP - 20;
-
-    // Centraliza o grid na tela
-    int startX = cst::PDG_LR -6;
-    int startY = cst::PADD_TOP +1;
-
-    // Vertical
-    drawGridLines(true, startX -16, cellCount, startY, gridHeight+100, cellSize, cst::HHT);
-
-    // Horizontal
-    drawGridLines(false, startY, cellCount, startX, gridWidth, cellSize);
+    var $y = 0;
+    $for var $cls_hht = 0; $cls_hht <= cst::TOTALCELLS_HEIGHT; $cls_hht++:  // Horizontal
+        $y = INIT_TOP-1 + $cls_hht * cst::CELL_SIZE;
+        drawLineIn(INIT_LEFT, $y, INIT_LEFT + cst::TOTALWIDTH, $y);
+    $endfor
 }
 
 
