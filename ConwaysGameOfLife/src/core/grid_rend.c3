@@ -22,30 +22,27 @@ const Rectangle RECT @local = {
 };
 
 
-macro void drawLineIn(int start, int init, int end_x, int end_y) @local =>
-    rl::drawLine(start, init, end_x, end_y, rl::fade(rl::BLACK, 0.5f));
+const int INIT_LEFT @local = cst::M_WTH - cst::TOTALWIDTH -6;
+const int INIT_TOP  @local = cst::M_HHT - cst::TOTALHEIGHT - cst::PDG_LR;
 
-fn void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize) @inline
+macro void drawLineIn(int $start, int $init, int $end_x, int $end_y) @local =>
+    rl::drawLine($start, $init, $end_x, $end_y, rl::fade(rl::BLACK, 0.5f));
+
+macro void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize)
 {
-    int gridWidth  = cst::WTH +6;
-    int gridHeight = cst::HHT * 2 - cst::PDG_TOP - 20;
+    // rl::drawRectanglePro(cst::RECT_GA, cst::RECT_POS, 0.0f, cst::GRD_CELL_DEAD);
 
-    int gridDrawStartX = 3;
-    int gridDrawStartY = 71;
+    var $x = 0;
+    $for var $cls_wdt = 0; $cls_wdt <= cst::TOTALCELLS_WIDTH; $cls_wdt++:  // Vertical
+        $x = INIT_LEFT + $cls_wdt * cst::CELL_SIZE;  // Adjust for padding/offset
+        drawLineIn($x, INIT_TOP, $x, INIT_TOP + cst::TOTALHEIGHT);
+    $endfor
 
-    int gridDrawEndX = gridWidth - 1;
-    int gridDrawEndY = gridHeight - 4;
-
-    int gridDrawEndYBelow = cst::HHT + 71;
-    int gridDrawEndYInit = 4;
-
-    // Vertical
-    for (int x = gridDrawEndYInit; x <= gridDrawEndX; x += cellSize
-    ) drawLineIn(x, gridDrawStartY, x, gridDrawEndYBelow);
-
-    // Horizontal
-    for (int y = gridDrawStartY; y <= gridDrawEndY; y += cellSize
-    ) drawLineIn(gridDrawStartX, y, gridDrawEndX, y);
+    var $y = 0;
+    $for var $cls_hht = 0; $cls_hht <= cst::TOTALCELLS_HEIGHT; $cls_hht++:  // Horizontal
+        $y = INIT_TOP-1 + $cls_hht * cst::CELL_SIZE;
+        drawLineIn(INIT_LEFT, $y, INIT_LEFT + cst::TOTALWIDTH, $y);
+    $endfor
 }
 
 
