@@ -24,7 +24,7 @@ macro void drawLineIn(int $start, int $init, int $end_x, int $end_y) @local =>
 
 macro void Grid.drawGrid2D(Grid *self, int cellCount, int cellSize)
 {
-    // rl::drawRectanglePro(cst::RECT_GA, cst::RECT_POS, 0.0f, cst::GRD_CELL_DEAD);
+    rl::drawRectanglePro({INIT_LEFT, INIT_TOP, cst::TOTALWIDTH, cst::TOTALHEIGHT}, { 0f, 0f }, 0f, cst::GRD_CELL_DEAD);
 
     var $x = 0;
     $for var $cls_wdt = 0; $cls_wdt <= cst::TOTALCELLS_WIDTH; $cls_wdt++:  // Vertical
