@@ -1,53 +1,46 @@
 import raylib5::rl;
-import grid_size;
 
 
 const char FPS = 165;
 const float UPDATE_INTERVAL = 0.09f;
 
-// Depending on the number of cells, it can drastically affect performance or prevent
-// the program from starting, due to the nature of a linear array.
-const char CELL_SIZE = 10;
+const char CELL_SIZE = 2;
 
 const char PDG_TOP = 80;
 const char PDG_LR = 10;
 
-const uint HHT = 650;
-const uint WTH = 1200;
+const uint HHT = 950;
+const uint WTH = 1400;
 
 
 const uint M_HHT = HHT + PDG_TOP;  // Height - Altura
 const uint M_WTH = WTH + PDG_LR;   // Width - largura
 
-const short SZ_GRID_HHT = HHT / CELL_SIZE +1;
-const short SZ_GRID_WTH = WTH / CELL_SIZE +1;
+const short SZ_GRID_HHT @if(CELL_SIZE > 1) = HHT / CELL_SIZE +1;
+const short SZ_GRID_WTH @if(CELL_SIZE > 1) = WTH / CELL_SIZE +1;
 
-const ichar PADD_COUNTER_BOX = 4;
+const short SZ_GRID_HHT @if(CELL_SIZE == 1) = HHT / 2+1;
+const short SZ_GRID_WTH @if(CELL_SIZE == 1) = WTH / 2+1;
+
 const ushort CENTER_TEXT = WTH/ 2 - PDG_TOP;
 
 
-// const Color GRD_CELL_LIFE = {0, 25, 0, 255};
-const Color GRD_CELL_LIFE = {0, 255, 255, 255};
+const Color GRD_CELL_LIFE = {255, 255, 255, 255};
 const Color GRD_CELL_DEAD = {65, 65, 65, 255};
 
-const ushort CCZ = cst::CELL_SIZE -1;
+const float CCZ @if(CELL_SIZE == 1) = 0.509;
+const float CCZ @if(CELL_SIZE > 1) = CELL_SIZE -0.5;
+
+$assert(CCZ > 0);
+
+
 const ushort PADD_TOP = cst::PDG_TOP - cst::PDG_LR;
 
-const Rectangle RECT_GA  = {4, PADD_TOP+2, cst::WTH, cst::HHT};
-const Vector2   RECT_POS = { 0.0f, 0.0f };
+const int TOTALWIDTH = TOTALCELLS_WIDTH * CELL_SIZE;
+const int TOTALHEIGHT = TOTALCELLS_HEIGHT * CELL_SIZE;
 
-
-const short[<3>] BORDER = {
-    PDG_TOP - 3,
-
-    M_WTH - PDG_LR,
-    M_HHT - PDG_TOP
-};
-
-typedef Table = uint[<2>];
-
-alias MatrixG = Size_grid{cst::SZ_GRID_WTH -1, cst::SZ_GRID_HHT -1};
-const MatrixG TMP_GRD = {};
+const int TOTALCELLS_WIDTH = SZ_GRID_WTH -1;
+const int TOTALCELLS_HEIGHT = SZ_GRID_HHT -1;
 
 
 struct Text_opt {

@@ -41,12 +41,22 @@ macro void @keyboard_actions(Simulation* #game) {
 
         #game.stop();
     };
-
     // Table grid_hover_mouse = get_grid_mouse_pos();
     // game.toggleCell(grid_hover_mouse, rl::isMouseButtonPressed(MouseButton.LEFT)? true:false, 1);
     // game.toggleCell(grid_hover_mouse, rl::isMouseButtonPressed(MouseButton.RIGHT), 0);
 
-    @key_pressed(rl::KEY_F)? #game.createRandomState() : (@key_pressed(rl::KEY_G) ? #game.clearGrid() :(void)0);
+    @key_pressed(rl::KEY_F)? #game.createRandomCellsState(16) : (@key_pressed(rl::KEY_G) ? #game.clearGrid() :(void)0);
+}
+
+macro void @whileWindowOpen($color_background; @body()) @local {
+    while (!rl::windowShouldClose()) {
+        rl::beginDrawing();
+        rl::clearBackground(rl::getColor($color_background));
+
+        @body();
+
+        rl::endDrawing();
+    }
 }
 
 fn void gofl_update(Simulation game) {
@@ -57,19 +67,13 @@ fn void gofl_update(Simulation game) {
     float timeCounter = 0f;             // Accumulative time counter (seconds)
     float updateDrawTime = 0f;          // Update + Draw time
 
-    while (ushort cell_size = cst::CELL_SIZE, !rl::windowShouldClose())
-    {
-        rl::beginDrawing();
-            rl::clearBackground(rl::getColor(0x101010FF));
+    @whileWindowOpen(0x101010FF) {
+        game.grid.drawGrid2D(180, cst::CELL_SIZE);
 
-            rl::drawRectanglePro(cst::RECT_GA, cst::RECT_POS, 0.0f, cst::GRD_CELL_DEAD);
-            game.grid.drawGrid2D(180, cell_size);
+        game.update(deltaTime);
+        game.draw(deltaTime);
 
-            game.update(deltaTime);
-            game.draw(deltaTime);
-
-            game_ui(&game);
-        rl::endDrawing();
+        game_ui(&game);
         @keyboard_actions(&game);
 
         do {  // Framerate could be variable
@@ -84,7 +88,7 @@ fn void gofl_update(Simulation game) {
             deltaTime = @subtract_float(rl::getTime(), previousTime);
             previousTime = currentTime;
         };
-    }
+    };
 }
 
 fn void game_ui(Simulation* game) {
@@ -104,7 +108,7 @@ fn void game_ui(Simulation* game) {
         center_draw_text(cst::GUI_TEXTS_STATE[0], CL_TEXTS_STATE[0]):
         center_draw_text(cst::GUI_TEXTS_STATE[1], CL_TEXTS_STATE[1]);
 
-    // rl::drawText(rl::textFormat("%d", game.getLivingCells()), 122, cst::PDG_TOP-24, 21, rl::GREEN);
+    rl::drawText(rl::textFormat("%d", game.grid.countCells()), 122, cst::PDG_TOP-24, 21, rl::GREEN);
 }
 
 
@@ -117,9 +121,6 @@ macro void init(String $title = "GAME", int $fps = 0) @public
 
     rl::setTargetFPS($fps? $fps: cst::FPS);
 
-    // Game State: run | Living cells: l_cells | Grid 1/Grid 2: grid
-    gofl_update({ .mem = tmem, .grid = (Grid_game) {
-        cst::TMP_GRD[0].len / cst::CELL_SIZE,
-        cst::TMP_GRD[1].len, 0, {}, {}
-    }});
+    // Game State: run | Living cells: alives | Grid 0/Grid 2: grid
+    gofl_update({ .grid = (Grid_game) {} });
 }
