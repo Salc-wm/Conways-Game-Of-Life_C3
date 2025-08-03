@@ -1,7 +1,6 @@
 module simul;
 
-// import std::collections::tuple;
-import std::collections::list;
+
 import std::collections::map;
 
 import cst, raylib5::rl;
@@ -17,8 +16,6 @@ alias HashVec = HashMap{Vec2, bool};
 struct Simulation
 {
     Grid_game grid;
-
-    // HashVec currentGeneration;
 
     bool run;
     double timer;
@@ -118,3 +115,4 @@ macro void applyRulesLife(Hash2DGrid *grid, Hash2DGrid *generation, Vec2 cell) @
         if ((neighbors == 2 || neighbors == 3)) grid.insert(...cell);
     }
 }
+
