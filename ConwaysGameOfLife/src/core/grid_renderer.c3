@@ -1,7 +1,7 @@
 module grid_rendering @public;
 
 import std::collections::map;
-import cst, raylib5::rl, std::io;
+import cst, raylib5::rl;
 
 
 alias Hash2D @local = HashMap{int, Stack};
@@ -98,10 +98,8 @@ fn void Grid.drawCells(&self, double deltaTime) @inline {
     int initialGridX = cst::CELL_SIZE + 6;
     int initialGridY = cst::PDG_TOP + cst::CELL_SIZE;
 
-    foreach (entry: self.iter()) {
-        int x = entry.key;
-
-        foreach (y: entry.value) {
+    self.@each(; x, stack) {
+        foreach (y: stack) {
             // Size screen width | Cell width size | Padding
 
             rl::drawRectanglePro(RECT, {
@@ -110,5 +108,6 @@ fn void Grid.drawCells(&self, double deltaTime) @inline {
                 x * cellSizeF + initialGridY
             }, 0.0f, cst::GRD_CELL_LIFE);
         }
-    }
+    };
 }
+
