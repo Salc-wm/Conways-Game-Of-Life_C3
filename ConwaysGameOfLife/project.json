@@ -19,5 +19,5 @@
     "cpu": "generic",
     "memory-env": "normal",
     "optsize": "small",
-    "opt": "O1"
+    "opt": "O2"
 }
