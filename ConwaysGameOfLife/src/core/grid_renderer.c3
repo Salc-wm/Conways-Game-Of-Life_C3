@@ -104,10 +104,10 @@ fn void Grid.drawCells(&self, double deltaTime) @inline {
 
             rl::drawRectanglePro(RECT, {
                 // Pos | Space | Start Padding
-                y * cellSizeF + initialGridX,
-                x * cellSizeF + initialGridY
+                ...(int[<2>]) {y, x} * cellSizeF + initialGridX
             }, 0.0f, cst::GRD_CELL_LIFE);
         }
     };
 }
+
 
