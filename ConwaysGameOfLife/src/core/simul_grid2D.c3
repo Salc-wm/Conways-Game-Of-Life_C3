@@ -45,13 +45,13 @@ fn void Simulation.createRandomCellsState(Simulation* self, uint density) {
 }
 
 
-macro uint getGridPos(int pos, ichar neighbor, ushort line) ) @local {
-    int pos = ac_pos + neighbor;
+macro uint getGridPos(int pos, ichar neighbor, ushort line) @local {
+    int n_pos = pos + neighbor;
 
     // if (pos == 0) return 0;
     // if ((pos > 0) == (line > 0)) return pos % line;
 
-    return (pos + line) % line;
+    return (n_pos + line) % line;
 }
 
 const int COLS @local = cst::HHT / cst::CELL_SIZE;
@@ -122,5 +122,6 @@ macro void applyRulesLife(Hash2DGrid *grid, Hash2DGrid *generation, Vec2 cell) @
         if ((neighbors == 2 || neighbors == 3)) grid.insert(...cell);
     }
 }
+
 
 
